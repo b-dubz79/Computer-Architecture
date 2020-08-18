@@ -13,6 +13,7 @@ class CPU:
         self.LDI = 0b10000010
         self.PRN = 0b01000111
         self.HLT = 0b00000001
+        self.MUL = 0b10100010
         self.op_size = 0
 
     def ram_read(self, address):
@@ -25,22 +26,38 @@ class CPU:
         """Load a program into memory."""
 
         address = 0
+        # program = [0] * 256
+
+        
+        print("using: cpu.py")
+        with open(sys.argv[1]) as inst_file:
+            for line in inst_file:
+                split_cmds = line.split('#')[0].strip()
+                if split_cmds == '':
+                    continue
+                inst_nums = int(split_cmds, 2)
+                self.ram[address] = inst_nums
+                address += 1
+        
+                    
 
         # For now, we've just hardcoded a program:
+        # rewrite the program so it's dynamic
+        # use argv and make sure there are 2 indexes (filename and user specified?)
 
-        program = [
-            # From print8.ls8
-            0b10000010, # LDI R0,8
-            0b00000000,
-            0b00001000,
-            0b01000111, # PRN R0
-            0b00000000,
-            0b00000001, # HLT
-        ]
+        # program = [
+        #     # From print8.ls8
+        #     0b10000010, # LDI R0,8
+        #     0b00000000,
+        #     0b00001000,
+        #     0b01000111, # PRN R0
+        #     0b00000000,
+        #     0b00000001, # HLT
+        # ]
 
-        for instruction in program:
-            self.ram[address] = instruction
-            address += 1
+        # for instruction in program:
+        #     self.ram[address] = instruction
+        #     address += 1
 
 
     def alu(self, op, reg_a, reg_b):
@@ -49,6 +66,8 @@ class CPU:
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
         #elif op == "SUB": etc
+        elif op == "MUL":
+            self.reg[reg_a] *= self.reg[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -75,7 +94,6 @@ class CPU:
     def run(self):
         """Run the CPU."""
         is_running = True
-
         while is_running:
             cmd = self.ram_read(self.pc)
             if cmd == self.LDI:
@@ -90,4 +108,6 @@ class CPU:
             elif cmd == self.HLT:
                 is_running = False
                 self.op_size = 1
+            elif cmd == self.MUL:
+                self.alu("MUL", self.ram[self.pc + 1], self.ram[self.pc + 2])
             self.pc += self.op_size
