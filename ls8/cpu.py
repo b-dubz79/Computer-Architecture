@@ -19,6 +19,13 @@ class CPU:
         self.ADD = 0b10100000
         self.CALL = 0b01010000
         self.RET = 0b00010001
+        self.CMP = 0b10100111
+        self.JMP = 0b01010100
+        self.JEQ = 0b01010101
+        self.JNE = 0b01010110
+        self.eq_flag = 0b00000000
+        
+
 
         # self.operations = {
         #     LDI: run_LDI
@@ -34,9 +41,7 @@ class CPU:
         """Load a program into memory."""
 
         address = 0
-        # program = [0] * 256
 
-    
         with open(sys.argv[1]) as inst_file:
             for line in inst_file:
                 split_cmds = line.split('#')[0].strip()
@@ -45,7 +50,6 @@ class CPU:
                 inst_nums = int(split_cmds, 2)
                 self.ram[address] = inst_nums
                 address += 1
-        
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
@@ -55,6 +59,11 @@ class CPU:
         #elif op == "SUB": etc
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
+        elif op == "CMP":
+            if self.reg[reg_a] == self.reg[reg_b]:
+                self.eq_flag = 0b00000001
+            else:
+                self.eq_flag = 0b00000000
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -84,7 +93,6 @@ class CPU:
         is_running = True
         
         while is_running:
-            self.trace()
             # print('self  pc', self.pc)
             cmd = self.ram_read(self.pc)
             if cmd == self.LDI:
@@ -122,6 +130,36 @@ class CPU:
             elif cmd == self.ADD:
                 self.alu("ADD", self.ram[self.pc + 1], self.ram[self.pc + 2])
                 self.pc += 3
+
+            elif cmd == self.CMP:
+                self.alu("CMP", self.ram[self.pc + 1], self.ram[self.pc + 2])
+                # print('does it get here')
+                self.pc += 3
+
+            elif cmd == self.JEQ:
+                self.reg[7] -= 1
+                self.ram[self.reg[7]] = self.pc + 2
+                # print('what about here')
+                if self.eq_flag == True:
+                    self.pc = self.reg[self.ram[self.pc + 1]]
+                else:
+                    self.pc += 2
+                    
+            elif cmd == self.JNE:
+                self.reg[7] -= 1
+                self.ram[self.reg[7]] = self.pc + 2
+                # print('here?')
+                if self.eq_flag == False:
+                    self.pc = self.reg[self.ram[self.pc + 1]]
+                else:
+                    self.pc += 2
+
+            elif cmd == self.JMP:
+                self.reg[7] -= 1
+                self.ram[self.reg[7]] == self.pc + 2
+               
+                self.pc = self.reg[self.ram[self.pc + 1]]
+            
             elif cmd == self.CALL:
                 # push return address onto the stack
                 self.reg[7] -= 1 # sets stack pointer to 243 in ram
@@ -134,6 +172,7 @@ class CPU:
                 self.pc = self.ram[self.reg[7]]
                 self.reg[7] += 1
                 # self.pc += 1
+
 
                 
             
